@@ -1,0 +1,625 @@
+// ============================================================
+// Personal Hub — Prisma Schema
+// Banco: PostgreSQL via Supabase (ou local)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// AUTENTICAÇÃO
+// ─────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  timezone     String   @default("America/Sao_Paulo")
+  locale       String   @default("pt-BR")
+  theme        Theme    @default(SYSTEM)
+  onboarded    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tasks         Task[]
+  habits        Habit[]
+  habitLogs     HabitLog[]
+  goals         Goal[]
+  goalMilestones GoalMilestone[]
+  projects      Project[]
+  projectTasks  ProjectTask[]
+  studySessions StudySession[]
+  subjects      Subject[]
+  pomodoroSessions PomodoroSession[]
+  transactions  Transaction[]
+  accounts      FinancialAccount[]
+  categories    FinancialCategory[]
+  subscriptions Subscription[]
+  calendarEvents CalendarEvent[]
+  notifications Notification[]
+  aiChats       AiChat[]
+  settings      UserSettings?
+
+  @@map("users")
+}
+
+model UserSettings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationsDesktop  Boolean @default(true)
+  notificationsPush     Boolean @default(false)
+  weekStartsOn          Int     @default(1) // 0=Sun, 1=Mon
+  dailyGoalHours        Float   @default(8)
+  workStartHour         Int     @default(8)
+  workEndHour           Int     @default(18)
+  currency              String  @default("BRL")
+  monthlyBudget         Float?
+  savingsGoalPercent    Float   @default(20)
+
+  @@map("user_settings")
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+// ─────────────────────────────────────────
+// TAREFAS / ROTINA
+// ─────────────────────────────────────────
+
+model Task {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String?
+  category        String?
+  priority        Priority      @default(MEDIUM)
+  status          TaskStatus    @default(TODO)
+  dueDate         DateTime?
+  scheduledAt     DateTime?
+  estimatedMinutes Int?
+  actualMinutes   Int?
+  recurrence      Recurrence    @default(NONE)
+  recurrenceRule  String?       // cron-like rule for custom recurrence
+  color           String?
+  icon            String?
+  tags            String[]
+  isFavorite      Boolean       @default(false)
+  position        Int           @default(0)  // for kanban ordering
+
+  subtasks        Subtask[]
+  attachments     Attachment[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@map("tasks")
+}
+
+model Subtask {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean  @default(false)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("subtasks")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name      String
+  url       String
+  type      String
+  size      Int
+  createdAt DateTime @default(now())
+
+  @@map("attachments")
+}
+
+enum Priority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+  ARCHIVED
+}
+
+enum Recurrence {
+  NONE
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+// ─────────────────────────────────────────
+// HÁBITOS
+// ─────────────────────────────────────────
+
+model Habit {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  icon        String?
+  color       String?
+  category    String?
+  frequency   HabitFreq   @default(DAILY)
+  targetDays  Int[]       // 0=Sun…6=Sat for weekly habits
+  targetCount Int         @default(1) // times per period
+  unit        String?     // "glasses", "minutes", "pages", etc.
+  isActive    Boolean     @default(true)
+  position    Int         @default(0)
+
+  logs        HabitLog[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+  @@map("habits")
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime // date only (no time)
+  count     Int      @default(1)
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+  @@map("habit_logs")
+}
+
+enum HabitFreq {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// ─────────────────────────────────────────
+// METAS
+// ─────────────────────────────────────────
+
+model Goal {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  category    GoalCategory @default(PERSONAL)
+  targetValue Float        @default(100)
+  currentValue Float       @default(0)
+  unit        String?
+  dueDate     DateTime?
+  status      GoalStatus   @default(ACTIVE)
+  color       String?
+  icon        String?
+
+  milestones  GoalMilestone[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@map("goals")
+}
+
+model GoalMilestone {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  targetValue Float
+  isDone      Boolean  @default(false)
+  doneAt      DateTime?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("goal_milestones")
+}
+
+enum GoalCategory {
+  PERSONAL
+  FINANCIAL
+  HEALTH
+  CAREER
+  EDUCATION
+  RELATIONSHIP
+  TRAVEL
+  OTHER
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+// ─────────────────────────────────────────
+// PROJETOS
+// ─────────────────────────────────────────
+
+model Project {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  color       String?
+  icon        String?
+  status      ProjectStatus @default(ACTIVE)
+  dueDate     DateTime?
+  progress    Float         @default(0)
+
+  tasks       ProjectTask[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectTask {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  position    Int        @default(0)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("project_tasks")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  ARCHIVED
+}
+
+// ─────────────────────────────────────────
+// ESTUDOS
+// ─────────────────────────────────────────
+
+model Subject {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  color       String?
+  icon        String?
+  weeklyHours Float          @default(5)
+
+  sessions    StudySession[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("subjects")
+}
+
+model StudySession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  title       String?
+  notes       String?
+  startedAt   DateTime
+  endedAt     DateTime?
+  durationMin Int      @default(0)
+  type        StudyType @default(FREE)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, startedAt])
+  @@map("study_sessions")
+}
+
+model PomodoroSession {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workMinutes Int           @default(25)
+  breakMinutes Int          @default(5)
+  cycles      Int           @default(0)
+  completedCycles Int       @default(0)
+  status      PomodoroStatus @default(IDLE)
+  startedAt   DateTime?
+  endedAt     DateTime?
+
+  createdAt   DateTime      @default(now())
+
+  @@map("pomodoro_sessions")
+}
+
+enum StudyType {
+  FREE
+  POMODORO
+  DEEP_WORK
+  REVIEW
+}
+
+enum PomodoroStatus {
+  IDLE
+  WORKING
+  BREAK
+  COMPLETED
+  CANCELLED
+}
+
+// ─────────────────────────────────────────
+// FINANÇAS
+// ─────────────────────────────────────────
+
+model FinancialAccount {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  type         AccountType @default(CHECKING)
+  balance      Float       @default(0)
+  currency     String      @default("BRL")
+  color        String?
+  icon         String?
+  isActive     Boolean     @default(true)
+  includeInNet Boolean     @default(true)
+
+  transactions Transaction[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("financial_accounts")
+}
+
+model FinancialCategory {
+  id       String          @id @default(cuid())
+  userId   String
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name     String
+  type     TransactionType
+  icon     String?
+  color    String?
+  isSystem Boolean         @default(false)
+
+  transactions Transaction[]
+
+  @@map("financial_categories")
+}
+
+model Transaction {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId    String
+  account      FinancialAccount @relation(fields: [accountId], references: [id])
+  categoryId   String?
+  category     FinancialCategory? @relation(fields: [categoryId], references: [id])
+
+  title        String
+  description  String?
+  amount       Float
+  type         TransactionType
+  date         DateTime
+  paymentMethod PaymentMethod  @default(MONEY)
+
+  isRecurring  Boolean         @default(false)
+  recurrence   Recurrence      @default(NONE)
+
+  isInstallment Boolean        @default(false)
+  installmentNumber Int?
+  installmentTotal  Int?
+  installmentGroupId String?
+
+  tags         String[]
+  receiptUrl   String?
+  isPaid       Boolean         @default(true)
+  dueDate      DateTime?
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, type])
+  @@map("transactions")
+}
+
+model Subscription {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?
+  amount       Float
+  currency     String      @default("BRL")
+  billingCycle BillingCycle @default(MONTHLY)
+  nextBillingDate DateTime?
+  category     String?
+  color        String?
+  icon         String?
+  isActive     Boolean     @default(true)
+  url          String?
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("subscriptions")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  INVESTMENT
+  CREDIT_CARD
+  WALLET
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+  INVESTMENT
+}
+
+enum PaymentMethod {
+  MONEY
+  DEBIT_CARD
+  CREDIT_CARD
+  PIX
+  TRANSFER
+  BOLETO
+  OTHER
+}
+
+enum BillingCycle {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+// ─────────────────────────────────────────
+// CALENDÁRIO
+// ─────────────────────────────────────────
+
+model CalendarEvent {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  location    String?
+  color       String?
+  icon        String?
+
+  startAt     DateTime
+  endAt       DateTime
+  allDay      Boolean     @default(false)
+
+  recurrence  Recurrence  @default(NONE)
+  recurrenceRule String?
+
+  reminderMinutes Int[]   // minutes before to remind
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId, startAt])
+  @@map("calendar_events")
+}
+
+// ─────────────────────────────────────────
+// NOTIFICAÇÕES & ALERTAS
+// ─────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  body      String
+  type      NotificationType @default(INFO)
+  link      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  TASK_DUE
+  HABIT_REMINDER
+  GOAL_UPDATE
+  FINANCIAL_ALERT
+  SYSTEM
+}
+
+// ─────────────────────────────────────────
+// IA — HISTÓRICO DE CHATS
+// ─────────────────────────────────────────
+
+model AiChat {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String?
+  messages  Json      // Array<{role,content,createdAt}>
+  context   String?   // what module triggered this chat
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("ai_chats")
+}

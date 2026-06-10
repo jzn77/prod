@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Personal Hub — Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        brand: { 400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca' }
+      },
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] }
+    }
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f1f5f9;--card:#fff;--border:#e2e8f0;
+    --text:#0f172a;--muted:#64748b;--sidebar:#fff;
+    --input:#f8fafc;--primary:#6366f1;
+  }
+  .dark{
+    --bg:#0f0f1a;--card:#16162a;--border:#1e1e3a;
+    --text:#e2e8f0;--muted:#94a3b8;--sidebar:#0d0d1e;
+    --input:#1a1a2e;--primary:#818cf8;
+  }
+  html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:1rem;transition:.2s}
+  .card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-1px)}
+  .sidebar{background:var(--sidebar);border-right:1px solid var(--border)}
+  .nav-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;border-radius:.6rem;
+            cursor:pointer;font-size:.875rem;font-weight:500;color:var(--muted);transition:.15s}
+  .nav-item:hover{background:rgba(99,102,241,.08);color:var(--primary)}
+  .nav-item.active{background:rgba(99,102,241,.12);color:var(--primary)}
+  .page{display:none}.page.active{display:block}
+  .badge{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:9999px;font-size:.7rem;font-weight:600}
+  .btn-primary{background:var(--primary);color:#fff;border:none;padding:.6rem 1.1rem;border-radius:.7rem;
+               font-size:.875rem;font-weight:600;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:.4rem}
+  .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);padding:.5rem 1rem;
+             border-radius:.7rem;font-size:.875rem;font-weight:500;cursor:pointer;transition:.15s}
+  .btn-ghost:hover{background:rgba(99,102,241,.08)}
+  .input-field{width:100%;padding:.6rem 1rem;border-radius:.7rem;border:1px solid var(--border);
+               background:var(--input);color:var(--text);font-size:.875rem;outline:none;transition:.15s}
+  .input-field:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+  select.input-field{cursor:pointer}
+  .progress-bar{height:.5rem;border-radius:9999px;background:var(--border);overflow:hidden}
+  .progress-fill{height:100%;border-radius:9999px;transition:.5s}
+  .tag{display:inline-flex;align-items:center;padding:.2rem .5rem;border-radius:.4rem;font-size:.7rem;font-weight:500}
+  .scrollable{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .scrollable::-webkit-scrollbar{width:4px}
+  .scrollable::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  /* Animations */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .animate-in{animation:fadeUp .25s ease both}
+  .pulse{animation:pulse 2s infinite}
+  /* Kanban */
+  .kanban-col{background:rgba(99,102,241,.04);border-radius:1rem;padding:1rem;border:1px solid var(--border)}
+  .dark .kanban-col{background:rgba(99,102,241,.08)}
+  .task-card{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:.9rem;
+             margin-bottom:.5rem;cursor:pointer;transition:.15s}
+  .task-card:hover{border-color:var(--primary);transform:translateY(-1px)}
+  /* Habit grid */
+  .habit-dot{width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;
+             font-size:.65rem;transition:.2s;cursor:pointer}
+  /* Calendar */
+  .cal-day{min-height:4.5rem;padding:.4rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+           cursor:pointer;transition:.1s;font-size:.8rem}
+  .cal-day:hover{background:rgba(99,102,241,.05)}
+  .cal-day.today .day-num{background:var(--primary);color:#fff;border-radius:50%;
+                          width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center}
+  .cal-day.selected{background:rgba(99,102,241,.08)}
+  .event-pill{font-size:.65rem;padding:.1rem .4rem;border-radius:.3rem;color:#fff;margin-top:.2rem;truncate:1}
+  /* Chat */
+  .chat-bubble{max-width:72%;padding:.75rem 1rem;border-radius:1rem;font-size:.875rem;line-height:1.5}
+  .chat-bubble.user{background:var(--primary);color:#fff;border-bottom-right-radius:.25rem;margin-left:auto}
+  .chat-bubble.ai{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:.25rem}
+  /* Pomodoro */
+  .pomo-ring{transform:rotate(-90deg)}
+  /* Tabs */
+  .tab-btn{padding:.5rem 1rem;border-radius:.6rem;font-size:.875rem;font-weight:500;cursor:pointer;
+           color:var(--muted);border:none;background:transparent;transition:.15s}
+  .tab-btn.active{background:var(--card);color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .tab-content{display:none}.tab-content.active{display:block}
+  /* Tooltip shimmer */
+  .shimmer{background:linear-gradient(90deg,var(--border) 25%,rgba(255,255,255,.1) 50%,var(--border) 75%);
+           background-size:200% 100%;animation:shimmer 1.5s infinite}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- ═══════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════ -->
+<aside id="sidebar" class="sidebar w-60 flex-shrink-0 flex flex-col h-screen">
+  <!-- Logo -->
+  <div class="flex items-center gap-2.5 px-5 py-5 border-b" style="border-color:var(--border)">
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--primary)">
+      <svg width="16" height="16" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <span class="font-bold text-base">Personal Hub</span>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
+    <div class="nav-item active" onclick="goto('dashboard')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="goto('routine')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Rotina
+    </div>
+    <div class="nav-item" onclick="goto('habits')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Hábitos
+    </div>
+    <div class="nav-item" onclick="goto('goals')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Metas
+    </div>
+    <div class="nav-item" onclick="goto('studies')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      Estudos
+    </div>
+    <div class="nav-item" onclick="goto('finance')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>
+      Finanças
+    </div>
+    <div class="nav-item" onclick="goto('calendar')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Calendário
+    </div>
+    <div class="nav-item" onclick="goto('projects')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      Projetos
+    </div>
+    <div class="nav-item" onclick="goto('ai')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/><path d="M8 9h1l1 2 1-4 1 4 1-2h1"/></svg>
+      Assistente IA
+    </div>
+  </nav>
+
+  <!-- User -->
+  <div class="p-3 border-t" style="border-color:var(--border)">
+    <div class="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:opacity-80">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+           style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">JF</div>
+      <div class="min-w-0">
+        <p class="text-sm font-semibold truncate">João Faria</p>
+        <p class="text-xs" style="color:var(--muted)">joao@exemplo.com</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN
+═══════════════════════════════════════════════════ -->
+<div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+  <!-- Header -->
+  <header class="flex items-center gap-3 px-6 h-14 border-b flex-shrink-0"
+          style="background:var(--card);border-color:var(--border)">
+    <div class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm flex-1 max-w-sm cursor-pointer"
+         style="background:var(--input);color:var(--muted);border:1px solid var(--border)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Pesquisar…
+      <kbd class="ml-auto text-xs border rounded px-1" style="border-color:var(--border);font-size:.65rem">⌘K</kbd>
+    </div>
+    <div class="flex-1"></div>
+    <!-- Theme toggle -->
+    <button onclick="toggleTheme()" class="btn-ghost p-2" title="Alternar tema" style="padding:.45rem">
+      <svg id="icon-sun" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="icon-moon" class="hidden" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <!-- Bell -->
+    <button class="btn-ghost p-2 relative" style="padding:.45rem">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></span>
+    </button>
+  </header>
+
+  <!-- Content -->
+  <main class="flex-1 overflow-y-auto scrollable p-6">
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <div id="page-dashboard" class="page active animate-in">
+    <!-- Greeting -->
+    <div class="flex items-end justify-between mb-7">
+      <div>
+        <h1 class="text-2xl font-bold mb-0.5">Bom dia, João. 👋</h1>
+        <p style="color:var(--muted)" class="text-sm" id="date-label"></p>
+      </div>
+      <!-- Weather card -->
+      <div class="card px-4 py-3 flex items-center gap-3" style="border-radius:.9rem">
+        <div class="text-2xl">🌤️</div>
+        <div>
+          <p class="text-sm font-semibold">24°C — Parcialmente nublado</p>
+          <p class="text-xs" style="color:var(--muted)">São Paulo, SP</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary cards row -->
+    <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted)">Resumo de hoje</p>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+      <div class="card p-5">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(99,102,241,.12)">
+          <svg width="17" height="17" fill="none" stroke="#6366f1" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        </div>
+        <p class="text-2xl font-bold">3/7</p>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">Tarefas de hoje</p>
+        <p class="text-xs text-red-500 mt-1 font-medium">2 atrasadas</p>
+      </div>
+      <div class="card p-5">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(249,115,22,.12)">
+          <svg width="17" height="17" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <p class="text-2xl font-bold">4/6</p>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">Hábitos concluídos</p>
+        <p class="text-xs font-medium mt-1" style="color:#f97316">🔥 12 dias seguidos</p>
+      </div>
+      <div class="card p-5">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(139,92,246,.12)">
+          <svg width="17" height="17" fill="none" stroke="#8b5cf6" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        </div>
+        <p class="text-2xl font-bold">1h 45m</p>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">Horas estudadas</p>
+        <p class="text-xs mt-1" style="color:var(--muted)">Hoje</p>
+      </div>
+      <div class="card p-5">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(239,68,68,.12)">
+          <svg width="17" height="17" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>
+        </div>
+        <p class="text-2xl font-bold text-red-500">R$ 187</p>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">Gasto hoje</p>
+        <p class="text-xs mt-1" style="color:var(--muted)">vs R$ 150 média</p>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid lg:grid-cols-3 gap-5">
+      <!-- Left 2 cols -->
+      <div class="lg:col-span-2 space-y-5">
+        <!-- Finance overview -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-semibold">Visão Financeira — Junho</h2>
+            <button class="text-xs font-medium" style="color:var(--primary)" onclick="goto('finance')">Ver detalhes →</button>
+          </div>
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="p-3 rounded-xl text-center" style="background:rgba(16,185,129,.1)">
+              <p class="text-lg font-bold" style="color:#059669">R$ 7.200</p>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Receitas</p>
+            </div>
+            <div class="p-3 rounded-xl text-center" style="background:rgba(239,68,68,.1)">
+              <p class="text-lg font-bold text-red-600">R$ 4.850</p>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Despesas</p>
+            </div>
+            <div class="p-3 rounded-xl text-center" style="background:rgba(99,102,241,.1)">
+              <p class="text-lg font-bold" style="color:var(--primary)">R$ 2.350</p>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Saldo</p>
+            </div>
+          </div>
+          <canvas id="dashChart" height="100"></canvas>
+        </div>
+
+        <!-- Upcoming bills -->
+        <div class="card p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <svg width="15" height="15" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <h2 class="font-semibold">Contas a Vencer</h2>
+          </div>
+          <div class="space-y-0">
+            <div class="flex justify-between items-center py-2.5 border-b" style="border-color:var(--border)">
+              <div><p class="text-sm font-medium">Aluguel</p><p class="text-xs" style="color:var(--muted)">Vence: 10/06</p></div>
+              <span class="font-semibold text-sm text-red-500">R$ 1.500</span>
+            </div>
+            <div class="flex justify-between items-center py-2.5 border-b" style="border-color:var(--border)">
+              <div><p class="text-sm font-medium">Internet + Streaming</p><p class="text-xs" style="color:var(--muted)">Vence: 15/06</p></div>
+              <span class="font-semibold text-sm text-red-500">R$ 289</span>
+            </div>
+            <div class="flex justify-between items-center py-2.5">
+              <div><p class="text-sm font-medium">Curso de Programação</p><p class="text-xs" style="color:var(--muted)">Vence: 20/06</p></div>
+              <span class="font-semibold text-sm text-red-500">R$ 197</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right col -->
+      <div class="space-y-5">
+        <!-- Next task -->
+        <div class="card p-5">
+          <h2 class="font-semibold mb-3 flex items-center gap-2 text-sm">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Próxima Tarefa
+          </h2>
+          <div class="p-3 rounded-xl" style="background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2)">
+            <div class="flex items-start gap-2">
+              <div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-red-500"></div>
+              <div>
+                <p class="text-sm font-medium">Responder e-mails urgentes</p>
+                <p class="text-xs mt-0.5" style="color:var(--muted)">🕐 14:00 · ⏱ 30 min · Urgente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily goal -->
+        <div class="card p-5">
+          <h2 class="font-semibold mb-3 text-sm flex items-center gap-2">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Meta do Dia
+          </h2>
+          <p class="text-sm font-medium mb-2">Estudar 3h hoje</p>
+          <div class="progress-bar mb-1.5">
+            <div class="progress-fill" style="width:58%;background:var(--primary)"></div>
+          </div>
+          <div class="flex justify-between text-xs" style="color:var(--muted)">
+            <span>1h 45m feito</span><span>3h meta</span>
+          </div>
+          <p class="text-xs mt-1.5 font-semibold" style="color:var(--primary)">58% concluído</p>
+        </div>
+
+        <!-- Financial goal -->
+        <div class="card p-5">
+          <h2 class="font-semibold mb-3 text-sm flex items-center gap-2">
+            <svg width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>
+            Meta Financeira
+          </h2>
+          <p class="text-sm font-medium mb-2">Reserva de Emergência</p>
+          <div class="progress-bar mb-1.5">
+            <div class="progress-fill" style="width:17%;background:#10b981"></div>
+          </div>
+          <div class="flex justify-between text-xs" style="color:var(--muted)">
+            <span>R$ 5.000</span><span>R$ 30.000</span>
+          </div>
+          <p class="text-xs mt-1.5 font-semibold" style="color:#10b981">17% da meta</p>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="card p-5">
+          <h2 class="font-semibold mb-3 text-sm">Acesso Rápido</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="goto('routine')" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition-all hover:opacity-80" style="background:rgba(99,102,241,.08)">
+              <svg width="18" height="18" fill="none" stroke="#6366f1" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span class="text-xs font-medium">Nova Tarefa</span>
+            </button>
+            <button onclick="goto('finance')" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition-all hover:opacity-80" style="background:rgba(239,68,68,.08)">
+              <svg width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span class="text-xs font-medium">Gasto</span>
+            </button>
+            <button onclick="goto('studies')" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition-all hover:opacity-80" style="background:rgba(139,92,246,.08)">
+              <svg width="18" height="18" fill="none" stroke="#8b5cf6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span class="text-xs font-medium">Pomodoro</span>
+            </button>
+            <button onclick="goto('calendar')" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition-all hover:opacity-80" style="background:rgba(59,130,246,.08)">
+              <svg width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="text-xs font-medium">Calendário</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ROUTINE ═══════════ -->
+  <div id="page-routine" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Rotina & Tarefas</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">3/7 concluídas · 2 atrasadas</p>
+      </div>
+      <button class="btn-primary">+ Nova Tarefa</button>
+    </div>
+    <!-- Toolbar -->
+    <div class="flex gap-3 mb-5 flex-wrap">
+      <input class="input-field flex-1 min-w-48" placeholder="🔍 Pesquisar tarefas…" />
+      <select class="input-field w-44"><option>Todas as prioridades</option><option>Urgente</option><option>Alta</option><option>Média</option><option>Baixa</option></select>
+      <select class="input-field w-44"><option>Todos os status</option><option>A Fazer</option><option>Em Andamento</option><option>Concluído</option></select>
+      <div class="flex gap-1 p-1 rounded-xl" style="background:var(--input)">
+        <button onclick="setView('list')" id="vbtn-list" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all" style="background:var(--card);color:var(--primary)">Lista</button>
+        <button onclick="setView('kanban')" id="vbtn-kanban" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all" style="color:var(--muted)">Kanban</button>
+      </div>
+    </div>
+
+    <!-- List view -->
+    <div id="view-list" class="space-y-2">
+      <div class="task-card" onclick="toggleTask(this)">
+        <div class="flex items-start gap-3">
+          <div class="check-icon mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all" style="border-color:var(--border)"></div>
+          <div class="flex-1">
+            <p class="text-sm font-medium task-title">Responder e-mails urgentes</p>
+            <div class="flex gap-2 mt-1.5 flex-wrap">
+              <span class="badge" style="background:rgba(239,68,68,.12);color:#ef4444">🔴 Urgente</span>
+              <span class="text-xs flex items-center gap-1" style="color:var(--muted)">⏰ Hoje 14:00</span>
+              <span class="text-xs" style="color:var(--muted)">⏱ 30 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-card" onclick="toggleTask(this)">
+        <div class="flex items-start gap-3">
+          <div class="check-icon mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center" style="border-color:var(--border)"></div>
+          <div class="flex-1">
+            <p class="text-sm font-medium task-title">Revisar relatório mensal</p>
+            <div class="flex gap-2 mt-1.5 flex-wrap">
+              <span class="badge" style="background:rgba(249,115,22,.12);color:#f97316">🟠 Alta</span>
+              <span class="text-xs flex items-center gap-1" style="color:var(--muted)">📅 Amanhã</span>
+              <span class="text-xs" style="color:var(--muted)">⏱ 1h</span>
+              <span class="text-xs" style="color:var(--muted)">🏷 Trabalho</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-card" onclick="toggleTask(this)">
+        <div class="flex items-start gap-3">
+          <div class="check-icon mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center" style="border-color:var(--border)"></div>
+          <div class="flex-1">
+            <p class="text-sm font-medium task-title">Reunião com cliente — Projeto X</p>
+            <div class="flex gap-2 mt-1.5 flex-wrap">
+              <span class="badge" style="background:rgba(249,115,22,.12);color:#f97316">🟠 Alta</span>
+              <span class="text-xs" style="color:var(--muted)">🕐 15:30 — Sala virtual</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-card" onclick="toggleTask(this)">
+        <div class="flex items-start gap-3">
+          <div class="check-icon mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center" style="border-color:var(--border)"></div>
+          <div class="flex-1">
+            <p class="text-sm font-medium task-title">Atualizar portfólio</p>
+            <div class="flex gap-2 mt-1.5">
+              <span class="badge" style="background:rgba(234,179,8,.12);color:#ca8a04">🟡 Média</span>
+              <span class="text-xs" style="color:var(--muted)">📅 Esta semana</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-card opacity-60" onclick="toggleTask(this)">
+        <div class="flex items-start gap-3">
+          <div class="check-icon mt-0.5 w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style="background:#10b981">
+            <svg width="11" height="11" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium task-title line-through" style="color:var(--muted)">Comprar mantimentos</p>
+            <div class="flex gap-2 mt-1.5">
+              <span class="badge" style="background:rgba(16,185,129,.12);color:#10b981">✅ Concluído</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="task-card opacity-60">
+        <div class="flex items-start gap-3">
+          <div class="check-icon mt-0.5 w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style="background:#10b981">
+            <svg width="11" height="11" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium task-title line-through" style="color:var(--muted)">Academia — treino A</p>
+            <div class="flex gap-2 mt-1.5">
+              <span class="badge" style="background:rgba(16,185,129,.12);color:#10b981">✅ Concluído</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanban view (hidden by default) -->
+    <div id="view-kanban" class="hidden grid-cols-3 gap-4">
+      <div class="kanban-col" style="border-top:3px solid #94a3b8">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">A Fazer</h3>
+          <span class="badge" style="background:var(--border);color:var(--muted)">3</span>
+        </div>
+        <div class="task-card"><p class="text-sm font-medium">Responder e-mails urgentes</p><span class="badge mt-2" style="background:rgba(239,68,68,.12);color:#ef4444">Urgente</span></div>
+        <div class="task-card"><p class="text-sm font-medium">Atualizar portfólio</p><span class="badge mt-2" style="background:rgba(234,179,8,.12);color:#ca8a04">Média</span></div>
+        <div class="task-card"><p class="text-sm font-medium">Reunião com cliente</p><span class="badge mt-2" style="background:rgba(249,115,22,.12);color:#f97316">Alta</span></div>
+      </div>
+      <div class="kanban-col" style="border-top:3px solid #3b82f6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">Em Andamento</h3>
+          <span class="badge" style="background:var(--border);color:var(--muted)">1</span>
+        </div>
+        <div class="task-card"><p class="text-sm font-medium">Revisar relatório mensal</p><span class="badge mt-2" style="background:rgba(249,115,22,.12);color:#f97316">Alta</span></div>
+      </div>
+      <div class="kanban-col" style="border-top:3px solid #10b981">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">Concluído</h3>
+          <span class="badge" style="background:var(--border);color:var(--muted)">3</span>
+        </div>
+        <div class="task-card opacity-60"><p class="text-sm font-medium line-through" style="color:var(--muted)">Comprar mantimentos</p></div>
+        <div class="task-card opacity-60"><p class="text-sm font-medium line-through" style="color:var(--muted)">Academia — treino A</p></div>
+        <div class="task-card opacity-60"><p class="text-sm font-medium line-through" style="color:var(--muted)">Pagar contas de maio</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ HABITS ═══════════ -->
+  <div id="page-habits" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Hábitos</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)" id="habits-date"></p>
+      </div>
+      <button class="btn-primary">+ Novo Hábito</button>
+    </div>
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="card p-4">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(16,185,129,.1)">✅</div>
+        <p class="text-xl font-bold">4/6</p><p class="text-xs mt-0.5" style="color:var(--muted)">Feitos hoje</p>
+      </div>
+      <div class="card p-4">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(249,115,22,.1)">🔥</div>
+        <p class="text-xl font-bold">12 dias</p><p class="text-xs mt-0.5" style="color:var(--muted)">Maior sequência</p>
+      </div>
+      <div class="card p-4">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(99,102,241,.1)">📊</div>
+        <p class="text-xl font-bold">76%</p><p class="text-xs mt-0.5" style="color:var(--muted)">Taxa de sucesso</p>
+      </div>
+    </div>
+    <!-- Habit cards -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="habits-grid">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════ GOALS ═══════════ -->
+  <div id="page-goals" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Metas</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">4 ativas · 1 concluída</p>
+      </div>
+      <button class="btn-primary">+ Nova Meta</button>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="card p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(99,102,241,.1)">🎯</div><p class="text-xl font-bold">4</p><p class="text-xs mt-0.5" style="color:var(--muted)">Metas ativas</p></div>
+      <div class="card p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(16,185,129,.1)">✅</div><p class="text-xl font-bold">1</p><p class="text-xs mt-0.5" style="color:var(--muted)">Concluídas</p></div>
+      <div class="card p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(139,92,246,.1)">📈</div><p class="text-xl font-bold">38%</p><p class="text-xs mt-0.5" style="color:var(--muted)">Progresso médio</p></div>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">💰</div><div><h3 class="font-semibold">Reserva de Emergência</h3><span class="badge" style="background:rgba(16,185,129,.1);color:#059669">Financeiro</span></div></div>
+        <div class="mb-1 flex justify-between text-sm"><span class="font-bold">R$ 5.000</span><span style="color:var(--muted)">R$ 30.000</span></div>
+        <div class="progress-bar mb-1.5"><div class="progress-fill" style="width:17%;background:#10b981"></div></div>
+        <p class="text-xs font-semibold" style="color:#10b981">17%</p>
+        <div class="space-y-1 mt-3 pt-3 border-t" style="border-color:var(--border)">
+          <div class="flex items-center gap-2 text-xs"><div class="w-3 h-3 rounded-full border-2" style="border-color:var(--border)"></div><span style="color:var(--muted)">Juntar R$ 10.000</span></div>
+          <div class="flex items-center gap-2 text-xs"><div class="w-3 h-3 rounded-full border-2" style="border-color:var(--border)"></div><span style="color:var(--muted)">Investir em CDB</span></div>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">📚</div><div><h3 class="font-semibold">Ler 24 livros em 2025</h3><span class="badge" style="background:rgba(59,130,246,.1);color:#2563eb">Educação</span></div></div>
+        <div class="mb-1 flex justify-between text-sm"><span class="font-bold">8 livros</span><span style="color:var(--muted)">24 livros</span></div>
+        <div class="progress-bar mb-1.5"><div class="progress-fill" style="width:33%;background:#3b82f6"></div></div>
+        <p class="text-xs font-semibold" style="color:#3b82f6">33%</p>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">🏋️</div><div><h3 class="font-semibold">Perder 8kg</h3><span class="badge" style="background:rgba(239,68,68,.1);color:#dc2626">Saúde</span></div></div>
+        <div class="mb-1 flex justify-between text-sm"><span class="font-bold">3 kg</span><span style="color:var(--muted)">8 kg</span></div>
+        <div class="progress-bar mb-1.5"><div class="progress-fill" style="width:37%;background:#ef4444"></div></div>
+        <p class="text-xs font-semibold text-red-500">37%</p>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">💼</div><div><h3 class="font-semibold">Lançar produto SaaS</h3><span class="badge" style="background:rgba(249,115,22,.1);color:#c2410c">Carreira</span></div></div>
+        <div class="mb-1 flex justify-between text-sm"><span class="font-bold">65%</span><span style="color:var(--muted)">100%</span></div>
+        <div class="progress-bar mb-1.5"><div class="progress-fill" style="width:65%;background:#f97316"></div></div>
+        <p class="text-xs font-semibold" style="color:#f97316">65%</p>
+      </div>
+      <div class="card p-5 opacity-70">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">✈️</div><div><h3 class="font-semibold">Viagem para Europa</h3><span class="badge" style="background:rgba(16,185,129,.15);color:#059669">✅ Concluída</span></div></div>
+        <div class="mb-1 flex justify-between text-sm"><span class="font-bold">R$ 15.000</span><span style="color:var(--muted)">R$ 15.000</span></div>
+        <div class="progress-bar mb-1.5"><div class="progress-fill" style="width:100%;background:#10b981"></div></div>
+        <p class="text-xs font-semibold" style="color:#10b981">100% 🎉</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ STUDIES ═══════════ -->
+  <div id="page-studies" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Estudos</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">1h 45m hoje · 12h esta semana</p>
+      </div>
+      <button class="btn-primary">+ Nova Disciplina</button>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="card p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(99,102,241,.1)">⏱</div><p class="text-xl font-bold">1h 45m</p><p class="text-xs mt-0.5" style="color:var(--muted)">Hoje</p></div>
+      <div class="card p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(139,92,246,.1)">📊</div><p class="text-xl font-bold">12h</p><p class="text-xs mt-0.5" style="color:var(--muted)">Esta semana</p></div>
+      <div class="card p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style="background:rgba(245,158,11,.1)">📚</div><p class="text-xl font-bold">4</p><p class="text-xs mt-0.5" style="color:var(--muted)">Disciplinas</p></div>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-5">
+      <!-- Pomodoro -->
+      <div class="lg:col-span-1 card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">⏰ Pomodoro</h3>
+          <div class="flex gap-1 p-1 rounded-lg" style="background:var(--input)">
+            <button onclick="setPreset(25,5)" class="px-2 py-1 rounded text-xs font-medium" style="background:var(--card);color:var(--primary)">25/5</button>
+            <button onclick="setPreset(50,10)" class="px-2 py-1 rounded text-xs font-medium" style="color:var(--muted)">50/10</button>
+          </div>
+        </div>
+        <!-- Mode selector -->
+        <div class="flex gap-2 mb-5">
+          <button onclick="setPomoMode('work')" id="pm-work" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all" style="background:var(--primary);color:#fff">Foco</button>
+          <button onclick="setPomoMode('break')" id="pm-break" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all" style="background:var(--input);color:var(--muted)">Pausa</button>
+          <button onclick="setPomoMode('long')" id="pm-long" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all" style="background:var(--input);color:var(--muted)">Pausa Longa</button>
+        </div>
+        <!-- SVG ring timer -->
+        <div class="flex flex-col items-center gap-5">
+          <div class="relative">
+            <svg width="180" height="180" class="pomo-ring">
+              <circle cx="90" cy="90" r="80" fill="none" stroke-width="8" style="stroke:var(--border)"/>
+              <circle id="pomo-ring" cx="90" cy="90" r="80" fill="none" stroke-width="8" stroke="#6366f1"
+                      stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="0"
+                      style="transition:stroke-dashoffset 1s linear"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="pomo-time" class="text-4xl font-bold font-mono">25:00</span>
+              <span id="pomo-label" class="text-xs mt-1" style="color:var(--muted)">Pronto para focar</span>
+            </div>
+          </div>
+          <!-- Controls -->
+          <div class="flex items-center gap-3">
+            <button onclick="resetPomo()" class="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:opacity-80" style="background:var(--input)">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            </button>
+            <button onclick="togglePomo()" id="pomo-btn" class="w-14 h-14 rounded-full flex items-center justify-center font-semibold transition-all" style="background:var(--primary);color:#fff">
+              <svg id="pomo-icon-play" width="18" height="18" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg id="pomo-icon-pause" class="hidden" width="18" height="18" fill="white" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style="background:var(--input)">
+              <span id="pomo-cycles">0</span>
+            </div>
+          </div>
+          <p class="text-xs" style="color:var(--muted)"><span id="pomo-cycles-label">0</span> ciclos hoje</p>
+        </div>
+      </div>
+      <!-- Sessions history + subjects -->
+      <div class="lg:col-span-2 space-y-4">
+        <!-- Subjects -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="card p-4"><div class="flex items-center gap-3"><div class="text-xl">💻</div><div><p class="font-medium text-sm">Next.js / React</p><p class="text-xs" style="color:var(--muted)">5h/semana · 42h total</p></div></div><div class="mt-2 progress-bar"><div class="progress-fill" style="width:70%;background:#6366f1"></div></div></div>
+          <div class="card p-4"><div class="flex items-center gap-3"><div class="text-xl">📐</div><div><p class="font-medium text-sm">Matemática</p><p class="text-xs" style="color:var(--muted)">3h/semana · 18h total</p></div></div><div class="mt-2 progress-bar"><div class="progress-fill" style="width:40%;background:#8b5cf6"></div></div></div>
+          <div class="card p-4"><div class="flex items-center gap-3"><div class="text-xl">🇬🇧</div><div><p class="font-medium text-sm">Inglês</p><p class="text-xs" style="color:var(--muted)">4h/semana · 30h total</p></div></div><div class="mt-2 progress-bar"><div class="progress-fill" style="width:55%;background:#3b82f6"></div></div></div>
+          <div class="card p-4"><div class="flex items-center gap-3"><div class="text-xl">📊</div><div><p class="font-medium text-sm">Data Science</p><p class="text-xs" style="color:var(--muted)">2h/semana · 8h total</p></div></div><div class="mt-2 progress-bar"><div class="progress-fill" style="width:20%;background:#f59e0b"></div></div></div>
+        </div>
+        <!-- Session history -->
+        <div class="card p-5">
+          <h3 class="font-semibold mb-4">Histórico de Sessões</h3>
+          <div class="space-y-0">
+            <div class="flex items-center gap-3 py-2.5 border-b" style="border-color:var(--border)">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(99,102,241,.1)">📚</div>
+              <div class="flex-1"><p class="text-sm font-medium">Next.js — Sessão Pomodoro</p><p class="text-xs" style="color:var(--muted)">Hoje · 10:00</p></div>
+              <span class="text-sm font-medium">1h 15m</span>
+            </div>
+            <div class="flex items-center gap-3 py-2.5 border-b" style="border-color:var(--border)">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,.1)">📚</div>
+              <div class="flex-1"><p class="text-sm font-medium">Inglês — Reading</p><p class="text-xs" style="color:var(--muted)">Hoje · 08:30</p></div>
+              <span class="text-sm font-medium">30m</span>
+            </div>
+            <div class="flex items-center gap-3 py-2.5">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(139,92,246,.1)">📚</div>
+              <div class="flex-1"><p class="text-sm font-medium">Data Science — Vídeo-aula</p><p class="text-xs" style="color:var(--muted)">Ontem · 19:00</p></div>
+              <span class="text-sm font-medium">45m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ FINANCE ═══════════ -->
+  <div id="page-finance" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Finanças</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">Controle completo da sua vida financeira</p>
+      </div>
+      <button class="btn-primary">+ Novo Lançamento</button>
+    </div>
+    <!-- Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="card p-5"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(16,185,129,.1)">💵</div><p class="text-2xl font-bold" style="color:#059669">R$ 2.350</p><p class="text-sm" style="color:var(--muted)">Saldo do Mês</p></div>
+      <div class="card p-5"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(16,185,129,.1)">📈</div><p class="text-2xl font-bold" style="color:#059669">R$ 7.200</p><p class="text-sm" style="color:var(--muted)">Receitas</p></div>
+      <div class="card p-5"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(239,68,68,.1)">📉</div><p class="text-2xl font-bold text-red-600">R$ 4.850</p><p class="text-sm" style="color:var(--muted)">Despesas</p></div>
+      <div class="card p-5"><div class="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style="background:rgba(59,130,246,.1)">🏦</div><p class="text-2xl font-bold" style="color:#2563eb">32.6%</p><p class="text-sm" style="color:var(--muted)">Taxa de Poupança</p></div>
+    </div>
+    <!-- Tabs -->
+    <div class="flex gap-1 p-1 rounded-xl w-fit mb-5" style="background:var(--input)">
+      <button onclick="finTab('overview')" id="ftab-overview" class="tab-btn active">Visão Geral</button>
+      <button onclick="finTab('transactions')" id="ftab-transactions" class="tab-btn">Lançamentos</button>
+      <button onclick="finTab('subscriptions')" id="ftab-subscriptions" class="tab-btn">Assinaturas</button>
+    </div>
+
+    <div id="ftab-content-overview" class="tab-content active">
+      <div class="grid lg:grid-cols-2 gap-5">
+        <div class="card p-5"><h3 class="font-semibold mb-4">Fluxo Mensal</h3><canvas id="finChart" height="120"></canvas></div>
+        <div class="card p-5"><h3 class="font-semibold mb-4">Despesas por Categoria</h3><canvas id="pieChart" height="120"></canvas></div>
+        <div class="card p-5">
+          <h3 class="font-semibold mb-3">Patrimônio Líquido</h3>
+          <p class="text-3xl font-bold">R$ 47.350</p>
+          <div class="mt-4 pt-4 border-t space-y-2" style="border-color:var(--border)">
+            <div class="flex justify-between text-sm"><span style="color:var(--muted)">Conta Corrente</span><span class="font-medium">R$ 8.200</span></div>
+            <div class="flex justify-between text-sm"><span style="color:var(--muted)">Poupança</span><span class="font-medium">R$ 5.150</span></div>
+            <div class="flex justify-between text-sm"><span style="color:var(--muted)">Investimentos</span><span class="font-medium">R$ 34.000</span></div>
+          </div>
+        </div>
+        <div class="card p-5">
+          <h3 class="font-semibold mb-3 flex items-center gap-2">🔔 Próximos Vencimentos</h3>
+          <div class="space-y-0">
+            <div class="flex justify-between py-2 border-b" style="border-color:var(--border)"><div><p class="text-sm font-medium">Aluguel</p><p class="text-xs" style="color:var(--muted)">10/06</p></div><span class="text-sm font-semibold text-red-500">R$ 1.500</span></div>
+            <div class="flex justify-between py-2 border-b" style="border-color:var(--border)"><div><p class="text-sm font-medium">Energia elétrica</p><p class="text-xs" style="color:var(--muted)">12/06</p></div><span class="text-sm font-semibold text-red-500">R$ 180</span></div>
+            <div class="flex justify-between py-2"><div><p class="text-sm font-medium">Curso de programação</p><p class="text-xs" style="color:var(--muted)">20/06</p></div><span class="text-sm font-semibold text-red-500">R$ 197</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ftab-content-transactions" class="tab-content">
+      <div class="card">
+        <div class="p-4 border-b flex gap-3" style="border-color:var(--border)">
+          <input class="input-field flex-1" placeholder="🔍 Pesquisar…" />
+          <select class="input-field w-40"><option>Todos</option><option>Receitas</option><option>Despesas</option></select>
+        </div>
+        <div class="p-4 space-y-0">
+          <div class="flex items-center gap-3 py-3 border-b" style="border-color:var(--border)"><div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background:rgba(16,185,129,.15)">💰</div><div class="flex-1"><p class="text-sm font-medium">Salário</p><p class="text-xs" style="color:var(--muted)">Receita · 01/06</p></div><span class="font-semibold text-sm" style="color:#10b981">+R$ 6.000</span></div>
+          <div class="flex items-center gap-3 py-3 border-b" style="border-color:var(--border)"><div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background:rgba(16,185,129,.15)">💻</div><div class="flex-1"><p class="text-sm font-medium">Freelancer — Projeto Y</p><p class="text-xs" style="color:var(--muted)">Receita · 05/06</p></div><span class="font-semibold text-sm" style="color:#10b981">+R$ 1.200</span></div>
+          <div class="flex items-center gap-3 py-3 border-b" style="border-color:var(--border)"><div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background:rgba(239,68,68,.15)">🏠</div><div class="flex-1"><p class="text-sm font-medium">Aluguel</p><p class="text-xs" style="color:var(--muted)">Moradia · 05/06</p></div><span class="font-semibold text-sm text-red-500">−R$ 1.500</span></div>
+          <div class="flex items-center gap-3 py-3 border-b" style="border-color:var(--border)"><div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background:rgba(239,68,68,.15)">🛒</div><div class="flex-1"><p class="text-sm font-medium">Supermercado</p><p class="text-xs" style="color:var(--muted)">Alimentação · 06/06</p></div><span class="font-semibold text-sm text-red-500">−R$ 420</span></div>
+          <div class="flex items-center gap-3 py-3 border-b" style="border-color:var(--border)"><div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background:rgba(139,92,246,.15)">📈</div><div class="flex-1"><p class="text-sm font-medium">Tesouro Direto</p><p class="text-xs" style="color:var(--muted)">Investimento · 07/06</p></div><span class="font-semibold text-sm" style="color:#8b5cf6">↑R$ 500</span></div>
+          <div class="flex items-center gap-3 py-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background:rgba(239,68,68,.15)">🚗</div><div class="flex-1"><p class="text-sm font-medium">Uber</p><p class="text-xs" style="color:var(--muted)">Transporte · 08/06</p></div><span class="font-semibold text-sm text-red-500">−R$ 87</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ftab-content-subscriptions" class="tab-content">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="text-2xl">🎬</div><div><p class="font-semibold">Netflix</p><p class="text-xs" style="color:var(--muted)">Lazer · Mensal</p></div></div><p class="text-xl font-bold">R$ 39,90</p></div>
+        <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="text-2xl">🎵</div><div><p class="font-semibold">Spotify</p><p class="text-xs" style="color:var(--muted)">Lazer · Mensal</p></div></div><p class="text-xl font-bold">R$ 21,90</p></div>
+        <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="text-2xl">☁️</div><div><p class="font-semibold">iCloud 200GB</p><p class="text-xs" style="color:var(--muted)">Utilidades · Mensal</p></div></div><p class="text-xl font-bold">R$ 6,90</p></div>
+        <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="text-2xl">📚</div><div><p class="font-semibold">Curso de React</p><p class="text-xs" style="color:var(--muted)">Educação · Mensal</p></div></div><p class="text-xl font-bold">R$ 197</p></div>
+        <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="text-2xl">🤖</div><div><p class="font-semibold">ChatGPT Plus</p><p class="text-xs" style="color:var(--muted)">Produtividade · Mensal</p></div></div><p class="text-xl font-bold">R$ 100</p></div>
+        <div class="card p-5 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer hover:opacity-80" style="min-height:120px">
+          <div class="text-2xl">➕</div><p class="text-sm" style="color:var(--muted)">Adicionar assinatura</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CALENDAR ═══════════ -->
+  <div id="page-calendar" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Calendário</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)" id="cal-month-label"></p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="prevMonth()" class="btn-ghost px-3">‹</button>
+        <button onclick="nextMonth()" class="btn-ghost px-3">›</button>
+        <button class="btn-primary">+ Evento</button>
+      </div>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-5">
+      <div class="lg:col-span-2 card overflow-hidden">
+        <!-- Weekday headers -->
+        <div class="grid grid-cols-7 border-b" style="border-color:var(--border)">
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Dom</div>
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Seg</div>
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Ter</div>
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Qua</div>
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Qui</div>
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Sex</div>
+          <div class="py-2 text-center text-xs font-medium" style="color:var(--muted)">Sáb</div>
+        </div>
+        <div id="cal-grid" class="grid grid-cols-7"></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold mb-4" id="cal-selected-label">Hoje</h3>
+        <div class="space-y-3">
+          <div class="p-3 rounded-xl border" style="border-left:3px solid #6366f1;border-color:var(--border);border-left-color:#6366f1">
+            <p class="font-medium text-sm">Reunião com cliente</p>
+            <p class="text-xs mt-0.5" style="color:var(--muted)">⏰ 15:30 — 16:30</p>
+          </div>
+          <div class="p-3 rounded-xl border" style="border-left:3px solid #10b981;border-color:var(--border);border-left-color:#10b981">
+            <p class="font-medium text-sm">Academia</p>
+            <p class="text-xs mt-0.5" style="color:var(--muted)">⏰ 07:00 — 08:00</p>
+          </div>
+          <div class="p-3 rounded-xl border" style="border-left:3px solid #f97316;border-color:var(--border);border-left-color:#f97316">
+            <p class="font-medium text-sm">Revisão do projeto</p>
+            <p class="text-xs mt-0.5" style="color:var(--muted)">⏰ 19:00 — 20:00 · Online</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PROJECTS ═══════════ -->
+  <div id="page-projects" class="page animate-in">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Projetos</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted)">3 ativos · 1 concluído</p>
+      </div>
+      <button class="btn-primary">+ Novo Projeto</button>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">🚀</div><div><h3 class="font-semibold">SaaS Personal Hub</h3><span class="badge" style="background:rgba(59,130,246,.1);color:#2563eb">Ativo</span></div></div>
+        <p class="text-sm mb-3" style="color:var(--muted)">Sistema de gestão pessoal completo com IA integrada.</p>
+        <div class="mb-1 flex justify-between text-xs" style="color:var(--muted)"><span>Progresso</span><span>65%</span></div>
+        <div class="progress-bar mb-3"><div class="progress-fill" style="width:65%;background:#6366f1"></div></div>
+        <div class="flex justify-between text-xs" style="color:var(--muted)"><span>📅 30/07</span><span>✅ 13/20 tarefas</span></div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">🎨</div><div><h3 class="font-semibold">Redesign do Portfólio</h3><span class="badge" style="background:rgba(59,130,246,.1);color:#2563eb">Ativo</span></div></div>
+        <p class="text-sm mb-3" style="color:var(--muted)">Atualização completa do portfólio online.</p>
+        <div class="mb-1 flex justify-between text-xs" style="color:var(--muted)"><span>Progresso</span><span>30%</span></div>
+        <div class="progress-bar mb-3"><div class="progress-fill" style="width:30%;background:#ec4899"></div></div>
+        <div class="flex justify-between text-xs" style="color:var(--muted)"><span>📅 15/07</span><span>✅ 3/10 tarefas</span></div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">📱</div><div><h3 class="font-semibold">App Mobile</h3><span class="badge" style="background:rgba(234,179,8,.1);color:#ca8a04">Pausado</span></div></div>
+        <p class="text-sm mb-3" style="color:var(--muted)">Versão React Native do Personal Hub.</p>
+        <div class="mb-1 flex justify-between text-xs" style="color:var(--muted)"><span>Progresso</span><span>10%</span></div>
+        <div class="progress-bar mb-3"><div class="progress-fill" style="width:10%;background:#f59e0b"></div></div>
+        <div class="flex justify-between text-xs" style="color:var(--muted)"><span>📅 Sem prazo</span><span>✅ 1/15 tarefas</span></div>
+      </div>
+      <div class="card p-5 opacity-70">
+        <div class="flex items-center gap-3 mb-4"><div class="text-2xl">📊</div><div><h3 class="font-semibold">Dashboard de Analytics</h3><span class="badge" style="background:rgba(16,185,129,.1);color:#059669">✅ Concluído</span></div></div>
+        <p class="text-sm mb-3" style="color:var(--muted)">Dashboard de monitoramento para clientes.</p>
+        <div class="progress-bar mb-3"><div class="progress-fill" style="width:100%;background:#10b981"></div></div>
+        <div class="flex justify-between text-xs" style="color:var(--muted)"><span>✅ Entregue 01/05</span><span>12/12 tarefas</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ AI ═══════════ -->
+  <div id="page-ai" class="page animate-in flex flex-col" style="height:calc(100vh - 8rem)">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+        <svg width="18" height="18" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/><path d="M8 9h1l1 2 1-4 1 4 1-2h1"/></svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold">Assistente IA</h1>
+        <p class="text-sm" style="color:var(--muted)">Análise personalizada dos seus dados</p>
+      </div>
+      <div class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium" style="background:rgba(16,185,129,.1);color:#059669">
+        <div class="w-1.5 h-1.5 rounded-full bg-green-500 pulse"></div>
+        Online
+      </div>
+    </div>
+    <!-- Chat area -->
+    <div class="flex-1 card p-5 overflow-y-auto scrollable space-y-4 mb-4" id="chat-messages">
+      <div class="flex gap-3">
+        <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+          <svg width="14" height="14" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0110 10 10 10 0 01-10 10A10 10 0 012 12 10 10 0 0112 2z"/></svg>
+        </div>
+        <div class="chat-bubble ai">Olá, João! 👋 Sou seu assistente pessoal inteligente. Analisei seus dados de hoje e tenho algumas observações:<br><br>📊 <strong>Finanças:</strong> Você gastou R$ 187 hoje, 25% acima da sua média diária.<br>✅ <strong>Tarefas:</strong> 3 de 7 concluídas — foque nas urgentes primeiro.<br>🔥 <strong>Hábitos:</strong> Sua sequência de 12 dias está ótima, mas <em>meditação</em> não foi registrada hoje.<br><br>O que você gostaria de explorar?</div>
+      </div>
+    </div>
+    <!-- Suggested prompts -->
+    <div class="grid grid-cols-3 gap-2 mb-4" id="suggestions">
+      <button onclick="sendSuggest('Quanto gastei este mês?')" class="p-3 rounded-xl text-xs text-left transition-all hover:opacity-80" style="background:var(--card);border:1px solid var(--border)">💰 Quanto gastei este mês?</button>
+      <button onclick="sendSuggest('Quais tarefas estão atrasadas?')" class="p-3 rounded-xl text-xs text-left transition-all hover:opacity-80" style="background:var(--card);border:1px solid var(--border)">⏰ Tarefas atrasadas?</button>
+      <button onclick="sendSuggest('Como melhorar minha produtividade?')" class="p-3 rounded-xl text-xs text-left transition-all hover:opacity-80" style="background:var(--card);border:1px solid var(--border)">🚀 Melhorar produtividade</button>
+    </div>
+    <!-- Input -->
+    <form onsubmit="sendMsg(event)" class="flex gap-2">
+      <input id="chat-input" class="input-field flex-1" placeholder="Pergunte algo sobre suas finanças, hábitos, metas…" />
+      <button type="submit" class="btn-primary px-4">
+        <svg width="16" height="16" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+  </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════ -->
+<script>
+// ── Navigation ───────────────────────────────────────────
+function goto(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  const pg = document.getElementById('page-'+id)
+  if(pg){ pg.classList.add('active'); pg.classList.remove('animate-in'); void pg.offsetWidth; pg.classList.add('animate-in') }
+  event?.currentTarget?.classList.add('active')
+  // Find nav item by onclick
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if(n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+id+"'")) n.classList.add('active')
+  })
+  // Init charts/calendar on first visit
+  if(id==='finance' && !window.finInited){ initFinCharts(); window.finInited=true }
+  if(id==='dashboard' && !window.dashInited){ initDashChart(); window.dashInited=true }
+  if(id==='calendar'){ buildCalendar() }
+  if(id==='habits' && !window.habitsInited){ buildHabits(); window.habitsInited=true }
+}
+
+// ── Theme ──────────────────────────────────────────────
+let dark = false
+function toggleTheme(){
+  dark = !dark
+  document.documentElement.className = dark ? 'dark' : 'light'
+  document.getElementById('icon-sun').classList.toggle('hidden', dark)
+  document.getElementById('icon-moon').classList.toggle('hidden', !dark)
+  // Re-init charts
+  if(window.dashChart){ window.dashChart.destroy(); window.dashChart=null; window.dashInited=false; if(document.getElementById('page-dashboard').classList.contains('active')){ initDashChart(); window.dashInited=true } }
+  if(window.finChartLine){ window.finChartLine.destroy(); window.finChartLine=null }
+  if(window.finChartPie){ window.finChartPie.destroy(); window.finChartPie=null }
+  if(document.getElementById('page-finance').classList.contains('active')){ initFinCharts() }
+}
+
+// ── Date label ──────────────────────────────────────────
+(function(){
+  const d = new Date()
+  const opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' }
+  const label = d.toLocaleDateString('pt-BR', opts)
+  const el = document.getElementById('date-label')
+  if(el) el.textContent = label.charAt(0).toUpperCase() + label.slice(1) + ' · ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+  const hd = document.getElementById('habits-date')
+  if(hd) hd.textContent = label.charAt(0).toUpperCase() + label.slice(1)
+})()
+
+// ── Charts (Dashboard) ──────────────────────────────────
+function initDashChart(){
+  const ctx = document.getElementById('dashChart')
+  if(!ctx||window.dashChart) return
+  const isDark = document.documentElement.classList.contains('dark')
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'
+  window.dashChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:['Jan','Fev','Mar','Abr','Mai','Jun'],
+      datasets:[
+        {label:'Receitas',data:[5500,6000,5800,6500,7000,7200],backgroundColor:'rgba(16,185,129,.7)',borderRadius:6},
+        {label:'Despesas',data:[4200,4800,4100,4600,4900,4850],backgroundColor:'rgba(239,68,68,.6)',borderRadius:6},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},color:isDark?'#94a3b8':'#64748b'}}},
+      scales:{
+        x:{grid:{color:gridColor},ticks:{color:isDark?'#94a3b8':'#64748b',font:{size:10}}},
+        y:{grid:{color:gridColor},ticks:{color:isDark?'#94a3b8':'#64748b',font:{size:10},callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}
+      }
+    }
+  })
+}
+initDashChart(); window.dashInited = true
+
+// ── Charts (Finance) ────────────────────────────────────
+function initFinCharts(){
+  const isDark = document.documentElement.classList.contains('dark')
+  const g = isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.05)'
+  const tc = isDark?'#94a3b8':'#64748b'
+  const ctx2 = document.getElementById('finChart')
+  if(ctx2 && !window.finChartLine){
+    window.finChartLine = new Chart(ctx2,{
+      type:'line',
+      data:{
+        labels:['Jan','Fev','Mar','Abr','Mai','Jun'],
+        datasets:[
+          {label:'Receitas',data:[5500,6000,5800,6500,7000,7200],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.1)',fill:true,tension:.4,borderWidth:2,pointRadius:3},
+          {label:'Despesas',data:[4200,4800,4100,4600,4900,4850],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',fill:true,tension:.4,borderWidth:2,pointRadius:3},
+        ]
+      },
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},color:tc}}},
+               scales:{x:{grid:{color:g},ticks:{color:tc,font:{size:10}}},y:{grid:{color:g},ticks:{color:tc,font:{size:10},callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}
+    })
+  }
+  const ctx3 = document.getElementById('pieChart')
+  if(ctx3 && !window.finChartPie){
+    window.finChartPie = new Chart(ctx3,{
+      type:'doughnut',
+      data:{
+        labels:['Moradia','Alimentação','Transporte','Lazer','Educação','Saúde','Outros'],
+        datasets:[{data:[1500,850,420,390,197,210,283],backgroundColor:['#6366f1','#f97316','#3b82f6','#ec4899','#f59e0b','#ef4444','#94a3b8'],borderWidth:0}]
+      },
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10},color:tc,boxWidth:10}}}}
+    })
+  }
+}
+
+// ── Routine: view switcher ──────────────────────────────
+function setView(v){
+  const list = document.getElementById('view-list')
+  const kanban = document.getElementById('view-kanban')
+  const bl = document.getElementById('vbtn-list')
+  const bk = document.getElementById('vbtn-kanban')
+  if(v==='list'){
+    list.style.display='block'; kanban.classList.add('hidden'); kanban.style.display=''
+    bl.style.background='var(--card)'; bl.style.color='var(--primary)'
+    bk.style.background='transparent'; bk.style.color='var(--muted)'
+  } else {
+    list.style.display='none'; kanban.classList.remove('hidden'); kanban.style.display='grid'
+    bk.style.background='var(--card)'; bk.style.color='var(--primary)'
+    bl.style.background='transparent'; bl.style.color='var(--muted)'
+  }
+}
+
+// ── Task toggle ─────────────────────────────────────────
+function toggleTask(card){
+  const check = card.querySelector('.check-icon')
+  const title = card.querySelector('.task-title')
+  const done = check.style.background === 'rgb(16, 185, 129)'
+  if(done){
+    check.style.background=''; check.innerHTML=''
+    check.style.border='2px solid var(--border)'
+    title.classList.remove('line-through'); title.style.color=''
+    card.style.opacity='1'
+  } else {
+    check.style.background='#10b981'; check.style.border='none'
+    check.innerHTML='<svg width="11" height="11" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+    title.classList.add('line-through'); title.style.color='var(--muted)'
+    card.style.opacity='0.6'
+  }
+}
+
+// ── Habits ──────────────────────────────────────────────
+const HABITS_DATA = [
+  { name:'💧 Beber água',    color:'#3b82f6', streak:12, rate:90, done:true  },
+  { name:'🏋️ Academia',      color:'#ef4444', streak:8,  rate:75, done:true  },
+  { name:'📚 Leitura',       color:'#f59e0b', streak:5,  rate:80, done:true  },
+  { name:'🧘 Meditação',     color:'#8b5cf6', streak:3,  rate:60, done:false },
+  { name:'💻 Estudar',       color:'#6366f1', streak:12, rate:85, done:true  },
+  { name:'🚶 Caminhada',     color:'#10b981', streak:0,  rate:45, done:false },
+]
+function buildHabits(){
+  const grid = document.getElementById('habits-grid'); if(!grid) return
+  const days = ['D','S','T','Q','Q','S','S']
+  grid.innerHTML = HABITS_DATA.map((h,i) => {
+    const dots = Array.from({length:7},(_,j)=>{
+      const fill = Math.random() > 0.25 || (j===6 && h.done)
+      return `<div class="flex flex-col items-center gap-0.5 flex-1">
+        <span class="text-center" style="font-size:.6rem;color:var(--muted)">${days[j]}</span>
+        <div class="habit-dot" onclick="toggleHabitDot(this)"
+             style="background:${fill?h.color:'var(--border)'}">
+          ${fill?'<svg width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':''}
+        </div>
+      </div>`
+    }).join('')
+    return `<div class="card p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="font-semibold text-sm">${h.name}</p>
+          <p class="text-xs mt-0.5" style="color:var(--muted)">${h.streak > 0 ? '🔥 '+h.streak+' dias seguidos' : 'Comece hoje!'}</p>
+        </div>
+        <button onclick="toggleHabitToday(this,${i})" class="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                style="background:${h.done?h.color:'var(--border)'};border:none;cursor:pointer">
+          ${h.done?'<svg width="13" height="13" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':''}
+        </button>
+      </div>
+      <div class="flex justify-between items-center mt-3 mb-2">
+        <span class="text-xs" style="color:var(--muted)">${h.rate}% este mês</span>
+      </div>
+      <div class="flex gap-0.5">${dots}</div>
+    </div>`
+  }).join('')
+}
+function toggleHabitDot(el){
+  const on = el.style.background !== 'var(--border)' && el.style.background !== ''
+  el.style.background = on ? 'var(--border)' : '#6366f1'
+  el.innerHTML = on ? '' : '<svg width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+}
+function toggleHabitToday(btn, i){
+  const h = HABITS_DATA[i]
+  h.done = !h.done
+  btn.style.background = h.done ? h.color : 'var(--border)'
+  btn.innerHTML = h.done ? '<svg width="13" height="13" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''
+}
+
+// ── Calendar ────────────────────────────────────────────
+let calDate = new Date()
+const EVENTS = {
+  9:  [{title:'Reunião cliente',color:'#6366f1'},{title:'Academia',color:'#10b981'}],
+  12: [{title:'Dentista',color:'#ef4444'}],
+  15: [{title:'Lançamento v1',color:'#f97316'}],
+  20: [{title:'Aniversário — Ana',color:'#ec4899'}],
+  25: [{title:'Revisão mensal',color:'#8b5cf6'}],
+}
+function buildCalendar(){
+  const grid = document.getElementById('cal-grid'); if(!grid) return
+  const now = new Date()
+  const y = calDate.getFullYear(), m = calDate.getMonth()
+  const firstDay = new Date(y,m,1).getDay()
+  const daysInMonth = new Date(y,m+1,0).getDate()
+  const label = calDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
+  document.getElementById('cal-month-label').textContent = label.charAt(0).toUpperCase()+label.slice(1)
+  let html = ''
+  for(let i=0;i<firstDay;i++) html += `<div class="cal-day" style="border-color:var(--border)"></div>`
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday = d===now.getDate() && m===now.getMonth() && y===now.getFullYear()
+    const evs = EVENTS[d] || []
+    const pills = evs.slice(0,2).map(e=>`<div class="event-pill truncate" style="background:${e.color}">${e.title}</div>`).join('')
+    html += `<div class="cal-day${isToday?' today':''}" onclick="selectDay(${d})" style="border-color:var(--border)">
+      <span class="day-num">${d}</span>
+      ${pills}
+    </div>`
+  }
+  grid.innerHTML = html
+}
+function selectDay(d){
+  document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'))
+  event?.currentTarget?.classList.add('selected')
+  const lbl = document.getElementById('cal-selected-label')
+  if(lbl) lbl.textContent = `Dia ${d} de ${calDate.toLocaleDateString('pt-BR',{month:'long'})}`
+}
+function prevMonth(){ calDate.setMonth(calDate.getMonth()-1); buildCalendar() }
+function nextMonth(){ calDate.setMonth(calDate.getMonth()+1); buildCalendar() }
+
+// ── Finance tabs ────────────────────────────────────────
+function finTab(t){
+  document.querySelectorAll('[id^="ftab-content-"]').forEach(el=>el.classList.remove('active'))
+  document.querySelectorAll('[id^="ftab-"]').forEach(btn=>{ if(btn.tagName==='BUTTON') btn.classList.remove('active') })
+  document.getElementById('ftab-content-'+t)?.classList.add('active')
+  document.getElementById('ftab-'+t)?.classList.add('active')
+  if(t==='overview' && !window.finInited){ initFinCharts(); window.finInited=true }
+}
+
+// ── Pomodoro ────────────────────────────────────────────
+let pomoWork=25, pomoBreak=5, pomoLong=15
+let pomoMode='work', pomoRunning=false, pomoSeconds=25*60, pomoCycles=0
+let pomoInterval=null
+function setPreset(w,b){ pomoWork=w; pomoBreak=b; pomoSeconds=w*60; renderPomo() }
+function setPomoMode(m){
+  pomoMode=m; pomoRunning=false; clearInterval(pomoInterval)
+  pomoSeconds = m==='work'?pomoWork*60:m==='break'?pomoBreak*60:pomoLong*60
+  document.getElementById('pm-work').style.cssText  = m==='work'?'background:var(--primary);color:#fff':'background:var(--input);color:var(--muted)'
+  document.getElementById('pm-break').style.cssText = m==='break'?'background:#10b981;color:#fff':'background:var(--input);color:var(--muted)'
+  document.getElementById('pm-long').style.cssText  = m==='long'?'background:#10b981;color:#fff':'background:var(--input);color:var(--muted)'
+  document.getElementById('pomo-icon-play').classList.remove('hidden')
+  document.getElementById('pomo-icon-pause').classList.add('hidden')
+  renderPomo()
+}
+function togglePomo(){
+  pomoRunning=!pomoRunning
+  document.getElementById('pomo-icon-play').classList.toggle('hidden',pomoRunning)
+  document.getElementById('pomo-icon-pause').classList.toggle('hidden',!pomoRunning)
+  if(pomoRunning){
+    pomoInterval=setInterval(()=>{
+      pomoSeconds--
+      if(pomoSeconds<=0){
+        clearInterval(pomoInterval); pomoRunning=false
+        if(pomoMode==='work'){ pomoCycles++; document.getElementById('pomo-cycles').textContent=pomoCycles; document.getElementById('pomo-cycles-label').textContent=pomoCycles; setPomoMode('break') }
+        else setPomoMode('work')
+      }
+      renderPomo()
+    },1000)
+  } else clearInterval(pomoInterval)
+  document.getElementById('pomo-label').textContent = pomoRunning ? (pomoMode==='work'?'Focando…':'Descansando…') : 'Pausado'
+}
+function resetPomo(){ pomoRunning=false; clearInterval(pomoInterval); pomoSeconds=pomoMode==='work'?pomoWork*60:pomoMode==='break'?pomoBreak*60:pomoLong*60; document.getElementById('pomo-icon-play').classList.remove('hidden'); document.getElementById('pomo-icon-pause').classList.add('hidden'); document.getElementById('pomo-label').textContent='Pronto para focar'; renderPomo() }
+function renderPomo(){
+  const m=Math.floor(pomoSeconds/60).toString().padStart(2,'0')
+  const s=(pomoSeconds%60).toString().padStart(2,'0')
+  document.getElementById('pomo-time').textContent=m+':'+s
+  const total=(pomoMode==='work'?pomoWork:pomoMode==='break'?pomoBreak:pomoLong)*60
+  const progress=(total-pomoSeconds)/total
+  const ring=document.getElementById('pomo-ring')
+  const circ=2*Math.PI*80
+  ring.style.strokeDashoffset=circ*(1-progress)
+  ring.style.stroke=pomoMode==='work'?'#6366f1':'#10b981'
+}
+
+// ── AI Chat ─────────────────────────────────────────────
+const AI_RESPONSES = {
+  'Quanto gastei este mês?': 'Você gastou **R$ 4.850** em junho até agora. As principais categorias foram:\n\n• 🏠 Moradia: R$ 1.500 (31%)\n• 🛒 Alimentação: R$ 850 (17%)\n• 🚗 Transporte: R$ 420 (9%)\n\nComparado ao mês anterior, suas despesas **aumentaram 3%**. O maior aumento foi em alimentação (+12%). Quer que eu sugira maneiras de economizar?',
+  'Quais tarefas estão atrasadas?': 'Encontrei **2 tarefas atrasadas**:\n\n• ⚠️ **Responder e-mails urgentes** — estava para hoje às 14:00 (Urgente)\n• ⚠️ **Revisar relatório mensal** — prazo era ontem (Alta prioridade)\n\nRecomendo tratar a primeira agora (30 min) e agendar a segunda para amanhã cedo. Devo reorganizar sua agenda?',
+  'Como melhorar minha produtividade?': 'Analisando seus dados dos últimos 30 dias, identifiquei 3 padrões:\n\n1. 📈 **Você produz 40% mais entre 9h–12h** — concentre tarefas difíceis nesse período\n2. 🔥 **Sua sequência de hábitos está em 12 dias** — ótimo! Meditação é o ponto fraco\n3. ⏱ **Média de 1h45 de estudos/dia** — para sua meta de 3h, precisaria de +1h15m\n\nSugestão: use Pomodoro para as tarefas urgentes de hoje — deverá levar ~3 ciclos.'
+}
+function sendSuggest(text){
+  document.getElementById('suggestions').style.display='none'
+  addMsg(text,'user')
+  setTimeout(()=>{ addMsg(AI_RESPONSES[text] || 'Analisando seus dados… ' + text, 'ai') }, 800)
+}
+function sendMsg(e){
+  e.preventDefault()
+  const input = document.getElementById('chat-input')
+  const text = input.value.trim(); if(!text) return
+  input.value=''
+  document.getElementById('suggestions').style.display='none'
+  addMsg(text,'user')
+  const typing = addMsg('…','ai',true)
+  setTimeout(()=>{
+    typing.textContent = 'Analisando seus dados… com base no que vejo, aqui está minha análise para "'+text+'". Conecte sua chave OpenAI para respostas completas e personalizadas em tempo real com todos seus dados reais!'
+  }, 1000)
+}
+function addMsg(text,role,temp=false){
+  const container = document.getElementById('chat-messages')
+  const wrap = document.createElement('div')
+  wrap.className = 'flex gap-3' + (role==='user'?' flex-row-reverse':'')
+  const avatar = document.createElement('div')
+  avatar.className='w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold'
+  avatar.style.background = role==='user' ? 'var(--primary)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)'
+  avatar.textContent = role==='user' ? 'JF' : '🤖'
+  const bubble = document.createElement('div')
+  bubble.className='chat-bubble '+role
+  bubble.style.whiteSpace='pre-line'
+  bubble.textContent=text
+  wrap.appendChild(avatar); wrap.appendChild(bubble)
+  container.appendChild(wrap)
+  container.scrollTop=container.scrollHeight
+  return bubble
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm ci",
+  "outputDirectory": ".next",
+
+  "regions": ["gru1"],
+
+  "env": {
+    "DATABASE_URL":               "@database-url",
+    "JWT_SECRET":                 "@jwt-secret",
+    "JWT_REFRESH_SECRET":         "@jwt-refresh-secret",
+    "OPENAI_API_KEY":             "@openai-api-key",
+    "RESEND_API_KEY":             "@resend-api-key",
+    "NEXT_PUBLIC_SENTRY_DSN":     "@sentry-dsn",
+    "SENTRY_AUTH_TOKEN":          "@sentry-auth-token",
+    "NEXT_PUBLIC_APP_URL":        "@app-url",
+    "NEXT_PUBLIC_APP_NAME":       "Personal Hub",
+    "OPENWEATHER_API_KEY":        "@openweather-api-key"
+  },
+
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin",  "value": "https://personalhub.app" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PATCH,DELETE,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
+        { "key": "Access-Control-Max-Age",       "value": "86400" }
+      ]
+    }
+  ],
+
+  "rewrites": [
+    { "source": "/health", "destination": "/api/health" }
+  ],
+
+  "crons": [
+    {
+      "path":     "/api/cron/alerts",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path":     "/api/cron/weekly-report",
+      "schedule": "0 9 * * 1"
+    }
+  ]
+}
