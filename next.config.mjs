@@ -1,10 +1,8 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  // Ignora erros de TypeScript e ESLint no build (necessário para deploy inicial)
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -27,10 +25,10 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Frame-Options',           value: 'DENY' },
-          { key: 'X-Content-Type-Options',     value: 'nosniff' },
-          { key: 'Referrer-Policy',            value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy',         value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'X-Frame-Options',       value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy',        value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy',     value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
       {

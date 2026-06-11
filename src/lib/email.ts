@@ -6,7 +6,9 @@
 import { Resend } from 'resend'
 import { logger } from './logger'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? 'missing')
+}
 
 const APP_NAME  = process.env.NEXT_PUBLIC_APP_NAME ?? 'Personal Hub'
 const FROM      = process.env.EMAIL_FROM           ?? 'noreply@personalhub.app'
@@ -84,7 +86,7 @@ export async function sendPasswordResetEmail(
 ): Promise<boolean> {
   const resetUrl = `${BASE_URL}/reset-password?token=${token}`
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from:    FROM,
       to,
       subject: `[${APP_NAME}] Redefinir sua senha`,
@@ -101,7 +103,7 @@ export async function sendPasswordResetEmail(
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<void> {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from:    FROM,
       to,
       subject: `Bem-vindo ao ${APP_NAME}! 🎉`,
