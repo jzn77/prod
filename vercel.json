@@ -1,37 +1,37 @@
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
-    "framework": "nextjs",
-    "buildCommand": "npm run build",
-    "devCommand": "npm run dev",
-    "installCommand": "npm install",
-    "outputDirectory": ".next",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
 
-    "regions": ["gru1"],
+  "regions": ["gru1"],
 
-    "headers": [
-          {
-                  "source": "/api/(.*)",
-                  "headers": [
-                            { "key": "Access-Control-Allow-Origin", "value": "*" },
-                            { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PATCH,DELETE,OPTIONS" },
-                            { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
-                            { "key": "Access-Control-Max-Age", "value": "86400" }
-                  ]
-          }
-    ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PATCH,DELETE,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
+        { "key": "Access-Control-Max-Age",       "value": "86400" }
+      ]
+    }
+  ],
 
-    "rewrites": [
-          { "source": "/health", "destination": "/api/health" }
-    ],
+  "rewrites": [
+    { "source": "/health", "destination": "/api/health" }
+  ],
 
-    "crons": [
-          {
-                  "path": "/api/cron/alerts",
-                  "schedule": "0 8 * * *"
-          },
-          {
-                  "path": "/api/cron/weekly-report",
-                  "schedule": "0 9 * * 1"
-          }
-    ]
+  "crons": [
+    {
+      "path":     "/api/cron/alerts",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path":     "/api/cron/weekly-report",
+      "schedule": "0 9 * * 1"
+    }
+  ]
 }
